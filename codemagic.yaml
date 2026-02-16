@@ -1,0 +1,53 @@
+# codemagic.yaml — iOS CI/CD for FreshBasket (Windows developers)
+workflows:
+  ios-debug:
+    name: iOS Debug (No Signing)
+    max_build_duration: 30
+    environment:
+      flutter: stable
+      xcode: latest
+    cache:
+      cache_paths:
+        - ~/.pub-cache
+    scripts:
+      - name: Install dependencies
+        script: flutter pub get
+      - name: Build iOS (no code sign)
+        script: |
+          flutter build ios --debug --no-codesign
+    artifacts:
+      - build/ios/iphoneos/*.app
+    publishing:
+      email:
+        recipients:
+          - tuyisenge_223015798@stud.ur.ac.rw
+        notify:
+          success: true
+          failure: true
+
+  ios-release:
+    name: iOS Ad Hoc (Requires Apple Certs)
+    max_build_duration: 60
+    environment:
+      flutter: stable
+      xcode: latest
+      ios_signing:
+        distribution_type: ad_hoc
+    cache:
+      cache_paths:
+        - ~/.pub-cache
+    scripts:
+      - name: Install dependencies
+        script: flutter pub get
+      - name: Build IPA
+        script: |
+          flutter build ipa --release
+    artifacts:
+      - build/ios/ipa/*.ipa
+    publishing:
+      email:
+        recipients:
+          - tuyisenge_223015798@stud.ur.ac.rw
+        notify:
+          success: true
+          failure: true
