@@ -218,3 +218,4 @@ class AuthRepository {
   }
 }
 
+// registerWithGoogle: supports role-based sign-up
