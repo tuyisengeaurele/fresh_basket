@@ -219,3 +219,4 @@ class AuthRepository {
 }
 
 // registerWithGoogle: supports role-based sign-up
+// signInAnonymously: allows guest browsing without account
