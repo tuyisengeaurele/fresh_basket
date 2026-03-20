@@ -502,3 +502,4 @@ class _EmptyCart extends StatelessWidget {
     );
   }
 }
+// _showGuestSheet: intercepts checkout for unauthenticated/anonymous users
