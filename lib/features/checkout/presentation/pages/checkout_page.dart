@@ -594,3 +594,4 @@ class _Row extends StatelessWidget {
     );
   }
 }
+// _useCurrentLocation: geolocator + placemarkFromCoordinates for address autofill
