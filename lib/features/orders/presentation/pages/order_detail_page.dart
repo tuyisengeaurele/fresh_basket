@@ -1481,3 +1481,4 @@ class _Card extends StatelessWidget {
     );
   }
 }
+// Rating submitted via Firestore transaction on seller_profiles and driver_profiles
