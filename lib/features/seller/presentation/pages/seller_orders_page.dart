@@ -792,3 +792,4 @@ class _EmptyOrders extends StatelessWidget {
     );
   }
 }
+// _DeclineButton: cancels order with seller note, triggers customer notification
