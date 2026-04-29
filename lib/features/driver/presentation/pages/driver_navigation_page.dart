@@ -410,3 +410,4 @@ class _DriverNavigationPageState extends ConsumerState<DriverNavigationPage> {
   }
 }
 // _startLocationTracking: Geolocator.getPositionStream with distanceFilter: 10
+// _openGoogleMapsNav: launches Maps with lat/lng or address as destination
