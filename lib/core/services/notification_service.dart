@@ -325,3 +325,4 @@ class NotificationService {
         .map((s) => s.docs.length);
   }
 }
+// _navigate: routes to /order/:id or /profile/notifications based on FCM data
