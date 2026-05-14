@@ -234,3 +234,4 @@ class _NotifTile extends StatelessWidget {
     }
   }
 }
+// Stack badge: small green basket icon overlaid on type icon for brand identity
