@@ -503,3 +503,4 @@ class _EmptyCart extends StatelessWidget {
   }
 }
 // _showGuestSheet: intercepts checkout for unauthenticated/anonymous users
+// _handleCheckout: detects guest (null user or empty email) and shows _showGuestSheet
