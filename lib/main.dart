@@ -104,3 +104,4 @@ class FreshBasketApp extends ConsumerWidget {
     );
   }
 }
+// runZonedGuarded: catches all uncaught dart errors, logs in debug / reports to Crashlytics in release
