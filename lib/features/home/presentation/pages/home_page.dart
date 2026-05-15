@@ -593,3 +593,4 @@ class _ProductGrid extends StatelessWidget {
     );
   }
 }
+// colorScheme.onSurface auto-adapts: dark text in light mode, white in dark mode
