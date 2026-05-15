@@ -169,3 +169,4 @@ class _SplashPageState extends ConsumerState<SplashPage> {
     );
   }
 }
+// easeOutBack curve gives the spring-past-then-settle feel identical to Twitter/X
