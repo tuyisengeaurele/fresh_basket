@@ -119,3 +119,4 @@ flutter:
     - assets/icons/
     - assets/animations/
     - .env
+# flutter_launcher_icons configured in pubspec.yaml
