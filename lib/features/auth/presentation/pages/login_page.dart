@@ -307,3 +307,4 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     );
   }
 }
+// clearSnackBars() prevents stacked snackbars; Firebase error codes mapped to user-friendly messages
