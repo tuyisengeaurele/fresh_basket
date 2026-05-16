@@ -412,3 +412,4 @@ class _AdminShellState extends State<AdminShell> {
     );
   }
 }
+// unreadCountStream: Firestore where isRead==false, drives badge on notifications tab
