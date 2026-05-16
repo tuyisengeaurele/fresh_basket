@@ -595,3 +595,4 @@ class _Row extends StatelessWidget {
   }
 }
 // _useCurrentLocation: geolocator + placemarkFromCoordinates for address autofill
+// checkout: auto-loads phone from profile; GPS icon shown when coords captured
