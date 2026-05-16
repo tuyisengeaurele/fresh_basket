@@ -372,3 +372,4 @@ class _SmBtn extends StatelessWidget {
     );
   }
 }
+// Row with 3 Expanded _FilterChip children replaces horizontal scrollable chips
