@@ -313,15 +313,17 @@ class _CategorySection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(
+        Padding(
+          padding: const EdgeInsets.symmetric(
               horizontal: AppDimensions.pagePadding),
-          child: Text(
-            'Categories',
-            style: TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
+          child: Builder(
+            builder: (ctx) => Text(
+              'Categories',
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                color: Theme.of(ctx).colorScheme.onSurface,
+              ),
             ),
           ),
         ),
@@ -527,10 +529,10 @@ class _SectionHeader extends StatelessWidget {
         children: [
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           TextButton(

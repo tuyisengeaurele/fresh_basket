@@ -417,6 +417,20 @@ class _SellerAddProductPageState extends ConsumerState<SellerAddProductPage> {
           : double.tryParse(_originalPriceCtrl.text);
       final stock = int.tryParse(_stockCtrl.text) ?? 0;
 
+      // Resolve the seller's registered business name from their SellerProfile.
+      // Falls back to the user's display name if no profile exists yet.
+      String businessName = user.fullName;
+      try {
+        final profileDoc =
+            await FirebaseService.firestore.collection('sellerProfiles').doc(user.uid).get();
+        if (profileDoc.exists) {
+          businessName =
+              (profileDoc.data()?['businessName'] as String?)?.trim().isNotEmpty == true
+                  ? profileDoc.data()!['businessName'] as String
+                  : user.fullName;
+        }
+      } catch (_) {}
+
       final data = {
         'name': _nameCtrl.text.trim(),
         'description': _descCtrl.text.trim(),
@@ -443,7 +457,7 @@ class _SellerAddProductPageState extends ConsumerState<SellerAddProductPage> {
           ...data,
           'sellerId': user.uid,
           'sellerName': user.fullName,
-          'sellerBusinessName': user.fullName,
+          'sellerBusinessName': businessName, // registered business name
           'rating': 0.0,
           'reviewCount': 0,
           'deliveryZones': [],

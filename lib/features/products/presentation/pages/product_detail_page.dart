@@ -1,12 +1,10 @@
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_dimensions.dart';
-import '../../../../core/services/firebase_service.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../features/auth/presentation/providers/auth_provider.dart';
 import '../../../../features/cart/presentation/providers/cart_provider.dart';
@@ -627,6 +625,23 @@ class _ReviewsPreview extends ConsumerWidget {
       );
       return;
     }
+
+    // Prevent duplicate reviews — one per user per product
+    final alreadyReviewed = await ref
+        .read(productRepositoryProvider)
+        .hasUserReviewed(productId, user.uid);
+    if (alreadyReviewed) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('You have already reviewed this product.'),
+            backgroundColor: AppColors.warning,
+          ),
+        );
+      }
+      return;
+    }
+
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -637,6 +652,7 @@ class _ReviewsPreview extends ConsumerWidget {
         productId: productId,
         userId: user.uid,
         userName: user.fullName,
+        userPhotoUrl: user.photoUrl,
       ),
     );
     // Refresh reviews after submission
@@ -764,22 +780,24 @@ class _ReviewsPreview extends ConsumerWidget {
 
 // ── Write Review Sheet ──────────────────────────────────────────────────────
 
-class _WriteReviewSheet extends StatefulWidget {
+class _WriteReviewSheet extends ConsumerStatefulWidget {
   final String productId;
   final String userId;
   final String userName;
+  final String? userPhotoUrl;
 
   const _WriteReviewSheet({
     required this.productId,
     required this.userId,
     required this.userName,
+    this.userPhotoUrl,
   });
 
   @override
-  State<_WriteReviewSheet> createState() => _WriteReviewSheetState();
+  ConsumerState<_WriteReviewSheet> createState() => _WriteReviewSheetState();
 }
 
-class _WriteReviewSheetState extends State<_WriteReviewSheet> {
+class _WriteReviewSheetState extends ConsumerState<_WriteReviewSheet> {
   int _stars = 5;
   late final TextEditingController _commentCtrl;
   bool _submitting = false;
@@ -806,35 +824,19 @@ class _WriteReviewSheetState extends State<_WriteReviewSheet> {
     }
     setState(() => _submitting = true);
     try {
-      // Save review document
-      final reviewRef = FirebaseService.firestore.collection('reviews').doc();
-      await reviewRef.set({
-        'id': reviewRef.id,
-        'productId': widget.productId,
-        'userId': widget.userId,
-        'userName': widget.userName,
-        'rating': _stars,
-        'comment': comment,
-        'type': 'product',
-        'createdAt': FieldValue.serverTimestamp(),
-      });
-
-      // Update product aggregate rating
-      final productRef =
-          FirebaseService.firestore.collection('products').doc(widget.productId);
-      await FirebaseService.firestore.runTransaction((tx) async {
-        final snap = await tx.get(productRef);
-        if (!snap.exists) return;
-        final data = snap.data()!;
-        final oldRating = (data['rating'] as num?)?.toDouble() ?? 0.0;
-        final oldCount = (data['reviewCount'] as num?)?.toInt() ?? 0;
-        final newCount = oldCount + 1;
-        final newRating = ((oldRating * oldCount) + _stars) / newCount;
-        tx.update(productRef, {
-          'rating': double.parse(newRating.toStringAsFixed(1)),
-          'reviewCount': newCount,
-        });
-      });
+      // Use the repository (batch write: review doc + product rating update)
+      // This is the correct pattern — avoids direct Firestore calls in the UI.
+      final review = ReviewModel(
+        id: '',
+        productId: widget.productId,
+        userId: widget.userId,
+        userName: widget.userName,
+        userPhotoUrl: widget.userPhotoUrl,
+        rating: _stars.toDouble(),
+        comment: comment,
+        createdAt: DateTime.now(),
+      );
+      await ref.read(productRepositoryProvider).submitReview(review);
 
       if (mounted) {
         Navigator.of(context).pop();

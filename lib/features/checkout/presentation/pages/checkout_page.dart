@@ -45,6 +45,11 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
   void initState() {
     super.initState();
     _prefillFromProfile();
+    // Clear any stale order result from a previous session so the page
+    // always starts with a clean AsyncData(null) state.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(placeOrderProvider.notifier).reset();
+    });
   }
 
   void _prefillFromProfile() {
@@ -154,9 +159,20 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
 
       if (!mounted) return;
 
+      // orderId is null when AsyncValue.guard caught an exception internally.
+      // Surface the error message instead of navigating to a broken route.
+      if (orderId == null || orderId.isEmpty) {
+        final orderState = ref.read(placeOrderProvider);
+        final errMsg = orderState.error?.toString() ?? 'Order failed. Please try again.';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(errMsg), backgroundColor: AppColors.error),
+        );
+        return;
+      }
+
       ref.read(cartProvider.notifier).clear();
       context.go(
-        RouteNames.orderConfirmation.replaceFirst(':id', orderId ?? ''),
+        RouteNames.orderConfirmation.replaceFirst(':id', orderId),
       );
     } catch (e) {
       if (!mounted) return;
@@ -470,10 +486,10 @@ class _SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       title,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 17,
         fontWeight: FontWeight.w700,
-        color: AppColors.textPrimary,
+        color: Theme.of(context).colorScheme.onSurface,
       ),
     );
   }

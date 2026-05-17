@@ -424,20 +424,34 @@ class _DriverPickerSheetState extends ConsumerState<_DriverPickerSheet> {
 
   Future<void> _loadDrivers() async {
     try {
-      // Fetch ALL driver profiles then filter client-side — avoids Firestore
-      // collection-query permission issues when isAvailable filter is applied.
+      // 1. Fetch all driver profiles in one read
       final snap = await FirebaseService.driverProfiles.get();
 
+      // 2. Filter to available drivers only (client-side to avoid index issues)
+      final availableProfiles = snap.docs
+          .map((d) {
+            try {
+              return DriverProfile.fromFirestore(d);
+            } catch (_) {
+              return null;
+            }
+          })
+          .whereType<DriverProfile>()
+          .where((p) => p.isAvailable)
+          .toList();
+
+      // 3. Fetch all user docs in PARALLEL — one round-trip instead of N
+      final userFutures = availableProfiles
+          .map((p) => FirebaseService.users.doc(p.uid).get());
+      final userDocs = await Future.wait(userFutures);
+
       final drivers = <_AvailableDriver>[];
-      for (final doc in snap.docs) {
+      for (var i = 0; i < availableProfiles.length; i++) {
         try {
-          final profile = DriverProfile.fromFirestore(doc);
-          if (!profile.isAvailable) continue; // filter client-side
-          final userDoc = await FirebaseService.users.doc(profile.uid).get();
-          if (userDoc.exists) {
+          if (userDocs[i].exists) {
             drivers.add(_AvailableDriver(
-              profile: profile,
-              user: UserModel.fromFirestore(userDoc),
+              profile: availableProfiles[i],
+              user: UserModel.fromFirestore(userDocs[i]),
             ));
           }
         } catch (_) {}

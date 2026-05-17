@@ -57,6 +57,28 @@ class OrderRepository {
       sellerIds: sellerIds,
     );
 
+    // ── Validate stock & decrement atomically ─────────────────────────────
+    // Run one transaction per distinct product. If any product is out of
+    // stock the whole batch rolls back and an exception is thrown — no
+    // partial stock deductions, no order created.
+    for (final item in items) {
+      final productRef = FirebaseService.products.doc(item.productId);
+      await FirebaseService.firestore.runTransaction((tx) async {
+        final snap = await tx.get(productRef);
+        if (!snap.exists) {
+          throw Exception('"${item.productName}" is no longer available.');
+        }
+        final currentStock = (snap.data()!['stock'] as num?)?.toInt() ?? 0;
+        if (currentStock < item.quantity) {
+          throw Exception(
+            '"${item.productName}" only has $currentStock unit(s) left '
+            'but you ordered ${item.quantity}.',
+          );
+        }
+        tx.update(productRef, {'stock': currentStock - item.quantity});
+      });
+    }
+
     final doc =
         await FirebaseService.orders.add(order.toMap());
 
@@ -169,6 +191,27 @@ class OrderRepository {
 
     await FirebaseService.orders.doc(orderId).update(updates);
 
+    // ── Restore stock when order is cancelled ─────────────────────────────
+    if (newStatus == OrderStatus.cancelled) {
+      try {
+        final orderSnap = await FirebaseService.orders.doc(orderId).get();
+        if (orderSnap.exists) {
+          final rawItems = (orderSnap.data()!['items'] as List? ?? []);
+          for (final rawItem in rawItems) {
+            final productId = rawItem['productId'] as String?;
+            final qty = (rawItem['quantity'] as num?)?.toInt() ?? 0;
+            if (productId != null && qty > 0) {
+              await FirebaseService.products.doc(productId).update({
+                'stock': FieldValue.increment(qty),
+              });
+            }
+          }
+        }
+      } catch (e) {
+        debugPrint('[OrderRepo] Stock restore on cancel failed: $e');
+      }
+    }
+
     // ── Notify all parties ────────────────────────────────────────────────────
     try {
       final orderDoc = await FirebaseService.orders.doc(orderId).get();
@@ -181,7 +224,7 @@ class OrderRepository {
       final driverId = data['driverId'] as String?;
       final customerName = data['customerName'] as String? ?? '';
 
-      // Update driver stats when an order is delivered
+      // Update driver stats when an order is delivered + free them up again
       if (newStatus == OrderStatus.delivered && driverId != null) {
         final deliveryFee =
             (data['deliveryFee'] as num?)?.toDouble() ?? 0.0;
@@ -189,9 +232,21 @@ class OrderRepository {
           await FirebaseService.driverProfiles.doc(driverId).update({
             'totalDeliveries': FieldValue.increment(1),
             'totalEarnings': FieldValue.increment(deliveryFee),
+            'isAvailable': true, // driver is free for the next order
           });
         } catch (e) {
           debugPrint('[OrderRepo] Driver stats update failed: $e');
+        }
+      }
+
+      // If the order is cancelled while a driver was assigned, free them up
+      if (newStatus == OrderStatus.cancelled && driverId != null) {
+        try {
+          await FirebaseService.driverProfiles.doc(driverId).update({
+            'isAvailable': true,
+          });
+        } catch (e) {
+          debugPrint('[OrderRepo] Driver availability restore failed: $e');
         }
       }
       final total = (data['total'] as num?)?.toDouble() ?? 0.0;
@@ -382,6 +437,12 @@ class OrderRepository {
     required String driverPhone,
     required String customerId,
   }) async {
+    // Mark driver as unavailable so they won't appear in the picker for
+    // the next order until they go back online after completing this delivery.
+    await FirebaseService.driverProfiles.doc(driverId).update({
+      'isAvailable': false,
+    });
+
     // Update the order
     await FirebaseService.orders.doc(orderId).update({
       'driverId': driverId,

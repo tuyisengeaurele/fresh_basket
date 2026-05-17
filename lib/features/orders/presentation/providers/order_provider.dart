@@ -42,6 +42,10 @@ class PlaceOrderNotifier extends AsyncNotifier<String?> {
   @override
   Future<String?> build() async => null;
 
+  /// Clear any stale result from a previous order so the checkout page
+  /// always starts with a clean slate.
+  void reset() => state = const AsyncData(null);
+
   Future<String?> placeOrder({
     required UserModel customer,
     required CartModel cart,

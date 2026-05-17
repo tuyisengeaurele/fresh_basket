@@ -45,19 +45,22 @@ class _CartPageState extends ConsumerState<CartPage> {
               onPressed: () {
                 showDialog(
                   context: context,
-                  builder: (_) => AlertDialog(
+                  // Use dialogCtx — NOT the outer `context` — so Navigator.pop
+                  // only dismisses the dialog, not the CartPage route itself.
+                  // Using the outer context was causing the black screen bug.
+                  builder: (dialogCtx) => AlertDialog(
                     title: const Text('Clear Cart'),
                     content: const Text(
                         'Are you sure you want to remove all items?'),
                     actions: [
                       TextButton(
-                        onPressed: () => Navigator.pop(context),
+                        onPressed: () => Navigator.pop(dialogCtx),
                         child: const Text('Cancel'),
                       ),
                       TextButton(
                         onPressed: () {
                           ref.read(cartProvider.notifier).clear();
-                          Navigator.pop(context);
+                          Navigator.pop(dialogCtx);
                         },
                         child: const Text('Clear',
                             style: TextStyle(color: AppColors.error)),

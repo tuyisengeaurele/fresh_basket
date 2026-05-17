@@ -128,11 +128,14 @@ class CartModel {
     final existing = items.indexWhere((i) => i.product.id == product.id);
     final newItems = List<CartItem>.from(items);
     if (existing >= 0) {
-      newItems[existing] = newItems[existing].copyWith(
-        quantity: newItems[existing].quantity + quantity,
-      );
+      // Never exceed available stock
+      final newQty = (newItems[existing].quantity + quantity)
+          .clamp(1, product.stock);
+      newItems[existing] = newItems[existing].copyWith(quantity: newQty);
     } else {
-      newItems.add(CartItem(product: product, quantity: quantity));
+      // Clamp the initial quantity too
+      final safeQty = quantity.clamp(1, product.stock.clamp(1, 999));
+      newItems.add(CartItem(product: product, quantity: safeQty));
     }
     return copyWith(items: newItems);
   }
@@ -145,7 +148,11 @@ class CartModel {
   CartModel updateQuantity(String productId, int quantity) {
     if (quantity <= 0) return removeItem(productId);
     final newItems = items.map((i) {
-      if (i.product.id == productId) return i.copyWith(quantity: quantity);
+      if (i.product.id == productId) {
+        // Cap at the stock cached when the item was added to the cart
+        final capped = quantity.clamp(1, i.product.stock.clamp(1, 999));
+        return i.copyWith(quantity: capped);
+      }
       return i;
     }).toList();
     return copyWith(items: newItems);
