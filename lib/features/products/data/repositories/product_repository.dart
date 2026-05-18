@@ -100,7 +100,8 @@ class ProductRepository {
       batch.update(productRef, {
         'rating': newRating,
         'reviewCount': newCount,
-        'updatedAt': FieldValue.serverTimestamp(),
+        // 'updatedAt' intentionally omitted — security rules only permit
+        // customers to touch ['rating', 'reviewCount'] on a product doc.
       });
     }
 
