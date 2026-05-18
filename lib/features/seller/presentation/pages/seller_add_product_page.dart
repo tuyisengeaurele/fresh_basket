@@ -422,7 +422,7 @@ class _SellerAddProductPageState extends ConsumerState<SellerAddProductPage> {
       String businessName = user.fullName;
       try {
         final profileDoc =
-            await FirebaseService.firestore.collection('sellerProfiles').doc(user.uid).get();
+            await FirebaseService.sellerProfiles.doc(user.uid).get();
         if (profileDoc.exists) {
           businessName =
               (profileDoc.data()?['businessName'] as String?)?.trim().isNotEmpty == true

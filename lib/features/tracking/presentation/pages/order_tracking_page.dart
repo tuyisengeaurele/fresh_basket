@@ -177,7 +177,7 @@ class _TrackingContent extends StatelessWidget {
                 // Timeline
                 Expanded(
                   child: ListView(
-                    children: _buildTimeline(order),
+                    children: _buildTimeline(order, context),
                   ),
                 ),
               ],
@@ -188,7 +188,7 @@ class _TrackingContent extends StatelessWidget {
     );
   }
 
-  List<Widget> _buildTimeline(OrderModel order) {
+  List<Widget> _buildTimeline(OrderModel order, BuildContext context) {
     final milestones = [
       (OrderStatus.pending, 'Order Placed', Icons.receipt_long_rounded),
       (OrderStatus.confirmed, 'Confirmed', Icons.check_circle_outline),
@@ -248,7 +248,7 @@ class _TrackingContent extends StatelessWidget {
                       isCurrent ? FontWeight.w700 : FontWeight.w400,
                   color: isUpcoming
                       ? AppColors.textHint
-                      : AppColors.textPrimary,
+                      : Theme.of(context).colorScheme.onSurface,
                 ),
               ),
             ),
